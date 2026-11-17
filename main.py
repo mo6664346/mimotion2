@@ -39,24 +39,14 @@ def get_min_max_by_time(hour=None, minute=None):
 # 根据星期几获取步数范围
 def get_weekday_step_range():
     """
-    根据当前是星期几返回不同的步数范围
-    周一到周五：8000-12000
-    周末（周六、周日）：6000-10000
-    
-    返回:
-        tuple: (最小步数, 最大步数)
+    每天固定返回 25000-30000 步（不分工作日/周末）。
     """
     current_time = get_beijing_time()
-    weekday = current_time.weekday()  # 0=周一, 1=周二, ..., 6=周日
+    weekday = current_time.weekday()
+    day_name = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][weekday]
 
-    if weekday < 5:  # 周一到周五 (0-4)
-        min_step = 6500
-        max_step = 13000
-        day_name = ["周一", "周二", "周三", "周四", "周五"][weekday]
-    else:  # 周末 (5-6)
-        min_step = 6000
-        max_step = 10000
-        day_name = "周六" if weekday == 5 else "周日"
+    min_step = 25000
+    max_step = 30000
 
     print(f"今天是{day_name}，步数范围：{min_step} ~ {max_step}")
     return min_step, max_step
