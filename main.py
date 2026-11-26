@@ -499,6 +499,37 @@ def notify_feishu(config_data, text):
     )
 
 
+OVERRIDE_FILE = "daily_overrides.json"
+
+
+def today_override_step():
+    """读取 daily_overrides.json 中今天登记的固定步数，没有则返回 None。"""
+    if not os.path.exists(OVERRIDE_FILE):
+        return None
+    try:
+        with open(OVERRIDE_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"⚠ 读取 {OVERRIDE_FILE} 失败：{e}")
+        return None
+    if not isinstance(data, dict):
+        return None
+    key = get_beijing_time().strftime("%Y-%m-%d")
+    entry = data.get(key)
+    if not isinstance(entry, dict):
+        return None
+    step = entry.get("step")
+    if step in (None, ""):
+        return None
+    try:
+        step = int(step)
+    except (TypeError, ValueError):
+        print(f"⚠ {OVERRIDE_FILE} 里 {key} 的步数不是整数：{step}")
+        return None
+    print(f"✓ 单日覆盖：{key} 固定写入 {step} 步")
+    return step
+
+
 def run_local(fixed_step=None):
     """本地执行主函数 - 单账号版本。fixed_step 有值时写入这个固定步数。"""
     global time_bj, encrypt_support, user_tokens, aes_key, config, min_step, max_step, token_login_name
@@ -560,13 +591,17 @@ def run_local(fixed_step=None):
 
     print("-" * 50)
 
-    # 根据星期几获取步数范围；测试模式使用指定步数
+    # 单日覆盖：daily_overrides.json 里登记了今天的固定步数时优先使用
+    if fixed_step is None:
+        fixed_step = today_override_step()
+
+    # 根据星期几获取步数范围；指定步数时直接使用固定值
     if fixed_step is None:
         min_step, max_step = get_weekday_step_range()
     else:
         fixed_step = int(fixed_step)
         min_step, max_step = fixed_step, fixed_step
-        print(f"测试模式，指定步数：{fixed_step}")
+        print(f"使用指定步数：{fixed_step}（单日覆盖或手动指定）")
 
     # 初始化配置字典（用于兼容现有代码）
     config = {}
