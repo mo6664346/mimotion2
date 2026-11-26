@@ -12,6 +12,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 STATE_FILE = "schedule_state.json"
+OVERRIDE_FILE = "daily_overrides.json"
 BEIJING = timezone(timedelta(hours=8))
 
 # 目标窗口：每天 20:00 前后各 30 分钟，即 19:30 ~ 20:30
@@ -29,6 +30,18 @@ def load_state():
         return {}
     with open(STATE_FILE, encoding="utf-8") as f:
         data = json.load(f)
+    return data if isinstance(data, dict) else {}
+
+
+def load_overrides():
+    if not os.path.isfile(OVERRIDE_FILE):
+        return {}
+    try:
+        with open(OVERRIDE_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"读取 {OVERRIDE_FILE} 失败：{e}")
+        return {}
     return data if isinstance(data, dict) else {}
 
 
@@ -66,6 +79,12 @@ def check():
             f"今天的目标时刻 {target:%H:%M:%S}"
         )
         write_skip(False)
+        return
+
+    entry = load_overrides().get(today) or {}
+    if isinstance(entry, dict) and entry.get("skip"):
+        print(f"北京时间 {today} 在 {OVERRIDE_FILE} 中标记为跳过，本次自动任务不执行")
+        write_skip(True)
         return
 
     if recorded == today:
